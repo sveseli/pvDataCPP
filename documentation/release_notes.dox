@@ -2,6 +2,12 @@
 
 @page release_notes Release Notes
 
+Release 8.X.Y (Feb 2022)
+========================
+
+- Compatible changes
+  - Fix JSON conversion issue with strings that contain double quotes
+
 Release 8.1.0 (Feb 2021)
 ========================
 

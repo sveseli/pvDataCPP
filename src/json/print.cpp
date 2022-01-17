@@ -69,6 +69,20 @@ void show_struct(args& A, const pvd::PVStructure* fld, const pvd::BitSet *mask)
     A.strm.put('}');
 }
 
+void insert_quoted_string(args& A, const std::string& s) 
+{
+    A.strm << '\"';
+    for (std::string::size_type i = 0; i < s.size(); i++) {
+        if (s[i] == '"') {
+            A.strm << '\\' << s[i];
+        }
+        else {
+            A.strm << s[i];
+        }
+    }
+    A.strm << '\"';
+}
+
 void show_field(args& A, const pvd::PVField* fld, const pvd::BitSet *mask)
 {
     switch(fld->getField()->getType())
@@ -77,7 +91,7 @@ void show_field(args& A, const pvd::PVField* fld, const pvd::BitSet *mask)
     {
         const pvd::PVScalar *scalar=static_cast<const pvd::PVScalar*>(fld);
         if(scalar->getScalar()->getScalarType()==pvd::pvString) {
-            A.strm<<'\"'<<scalar->getAs<std::string>()<<'\"';
+            insert_quoted_string(A, scalar->getAs<std::string>());
         } else {
             A.strm<<scalar->getAs<std::string>();
         }
@@ -97,11 +111,12 @@ void show_field(args& A, const pvd::PVField* fld, const pvd::BitSet *mask)
         for(size_t i=0, N=sarr.size(); i<N; i++) {
             if(i!=0)
                 A.strm.put(',');
-            if(isstring)
-                A.strm.put('\"');
-            A.strm<<sarr[i];
-            if(isstring)
-                A.strm.put('\"');
+            if(isstring) {
+                insert_quoted_string(A, sarr[i]);
+            }
+            else {
+                A.strm << sarr[i];
+            }
         }
         A.strm.put(']');
     }
