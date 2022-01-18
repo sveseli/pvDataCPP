@@ -271,11 +271,51 @@ void testroundtrip()
                       "}");
 }
 
+pvd::PVStructurePtr createTestStructure(const std::string& fieldName, const std::string& fieldValue)
+{
+    static pvd::PVDataCreatePtr pvDataCreate = pvd::getPVDataCreate();
+    pvd::PVScalarPtr f1 = pvDataCreate->createPVScalar(pvd::pvString);
+    pvd::PVFieldPtrArray pvFields;
+    pvd::StringArray fieldNames;
+    pvFields.reserve(1);
+    fieldNames.reserve(1);
+    fieldNames.push_back(fieldName);
+    pvFields.push_back(f1);
+    pvd::PVStructurePtr pvStructurePtr = pvDataCreate->createPVStructure(fieldNames, pvFields);
+    pvStructurePtr->getSubField<pvd::PVString>(fieldName)->put(fieldValue);
+    return pvStructurePtr;
+}
+
+void testPrintJson(const std::string& fieldName, const std::string& fieldValue, const std::string& expectedOutput)
+{
+    pvd::PVStructurePtr pvStructurePtr = createTestStructure(fieldName, fieldValue);
+
+    pvd::JSONPrintOptions opts;
+    opts.ignoreUnprintable = true;
+    opts.multiLine = false;
+    pvd::BitSetPtr bitSet(new pvd::BitSet(pvStructurePtr->getStructure()->getNumberFields()));
+    bitSet->set(0);
+    std::ostringstream strm;
+    pvd::printJSON(strm,*pvStructurePtr,*bitSet,opts);
+    std::string result = strm.str();
+    bool compare = (result == expectedOutput);
+    std::cout << "testPrintJson: result=" << result << "; expected=" << expectedOutput <<   "; comparison=" << compare << std::endl;
+    testOk1(compare == true);
+}
+
+void testPrintJson() 
+{
+    testPrintJson("foo", "bar", "{\"foo\": \"bar\"}");
+    testPrintJson("foo", "\"bar\"", "{\"foo\": \"\\\"bar\\\"\"}");
+    testPrintJson("foo", "\"long string with several \" characters\"", "{\"foo\": \"\\\"long string with several \\\" characters\\\"\"}");
+    testPrintJson("foo", "\"long string with several \" and ' characters\"", "{\"foo\": \"\\\"long string with several \\\" and ' characters\\\"\"}");
+}
+
 } // namespace
 
 MAIN(testjson)
 {
-    testPlan(29);
+    testPlan(33);
     try {
         testparseany();
         testparseanyarray();
@@ -283,6 +323,7 @@ MAIN(testjson)
         testparseanyjunk();
         testInto();
         testroundtrip();
+        testPrintJson();
     }catch(std::exception& e){
         testAbort("Unexpected exception: %s", e.what());
     }
